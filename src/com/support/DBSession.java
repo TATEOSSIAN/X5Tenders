@@ -142,7 +142,7 @@ public class DBSession {
             stmt.addBatch("IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'X5Tenders')\n"
                     + "BEGIN \n"
                     + "CREATE DATABASE [X5Tenders] ON PRIMARY\n"
-                    + "(NAME = N'X5Tenders', FILENAME ="+mdf+", SIZE=131072KB,"
+                    + "(NAME = N'X5Tenders', FILENAME ="+mdf+", SIZE=1800MB,"
                                 + "MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB)\n"
                     + "LOG ON\n"
                     + "(NAME = N'X5Tenders_log', FILENAME ="+ldf+", SIZE=5120KB,"
@@ -183,11 +183,16 @@ public class DBSession {
             stmt.addBatch("IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = N'scripter')\n"
                     + "CREATE LOGIN [scripter] WITH PASSWORD="+key+", DEFAULT_DATABASE=[X5Tenders], DEFAULT_LANGUAGE=[русский], "
                     + "CHECK_EXPIRATION=OFF, CHECK_POLICY=ON");
-            stmt.addBatch("ALTER SERVER ROLE [sysadmin] ADD MEMBER [scripter]");
             stmt.executeBatch();
             
-            CallableStatement cstmt = conn.prepareCall("{call dbo.sp_changedbowner(?,?)}");
-            conn.setCatalog("X5Tenders");
+            CallableStatement cstmt = conn.prepareCall("{call master..sp_addsrvrolemember(?,?)}");
+            conn.setCatalog("master");
+            cstmt.setNString(1, "scripter");
+            cstmt.setNString(2, "sysadmin");
+            cstmt.execute();
+            
+            cstmt = conn.prepareCall("{call [X5Tenders].[dbo].sp_changedbowner(?,?)}");
+            conn.setCatalog("master");
             cstmt.setNString(1, "scripter");
             cstmt.setBoolean(2, false);
             cstmt.execute();

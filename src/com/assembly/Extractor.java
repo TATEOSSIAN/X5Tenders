@@ -20,6 +20,7 @@ import org.jsoup.Connection.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 public class Extractor {
@@ -73,7 +74,8 @@ public class Extractor {
         } catch (MalformedURLException ex) {
             Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
+        Document lotDocument = null;
                 
         try {
             lotForm = Jsoup.connect(url.toString())
@@ -91,10 +93,39 @@ public class Extractor {
         }
         
         try {
-            Document lotDocument = lotForm.parse();
+            lotDocument = lotForm.parse();         
         } catch (IOException ex) {
             Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        String name = "";
+        Elements el = lotDocument.select("td#td_Name");
+        name = el == null ? "" : el.get(0).ownText();
+        
+        String number = "";
+        el = lotDocument.select("span#td_Number");
+        number = el == null ? "" : el.get(0).ownText();
+
+        String date_begin_reg = "";
+        el = lotDocument.select("td#td_date_begin_reg");
+        date_begin_reg = el == null ? "" : el.get(0).ownText();
+
+        String date_begin = "";
+        el = lotDocument.select("td#td_date_begin");
+        date_begin = el == null ? "" : el.get(0).ownText();
+
+        String finish_time = "";
+        el = lotDocument.select("td#td_finish_time");
+        finish_time = el == null ? "" : el.get(0).ownText();
+
+        el = lotDocument.select("h2:containsOwn(Конкурсная документация) ~ table");
+        Elements appendix = el == null ? null : el.get(0).select("tr:gt(0)");
+        if (appendix.size() != 0) {
+            
+        }
+
+        
+        
                 
     }
 
