@@ -1,26 +1,26 @@
 package com.assembly;
 
 import com.support.Params;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jsoup.Connection.*;
+import org.jsoup.Connection.Method;
+import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 public class Extractor {
@@ -58,6 +58,13 @@ public class Extractor {
         Matcher matcher = regex.matcher(rawNo);
         String match = "";
         
+        File fileR = new File("localR.dat");
+        try {
+            FileInputStream fs = new FileInputStream(fileR);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         while (matcher.find())
         {
             int start = matcher.start();
@@ -87,6 +94,7 @@ public class Extractor {
                     .header("Host", "tender.x5.ru")
                     .header("Upgrade-Insecure-Requests", "1")
                     .header("Referer", TENDERS_OVER_URL)
+                    //.data(id, VIEW_CMD, inputStream)
                     .execute();
         } catch (IOException ex) {
             Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
@@ -122,10 +130,33 @@ public class Extractor {
         Elements appendix = el == null ? null : el.get(0).select("tr:gt(0)");
         if (appendix.size() != 0) {
             
-        }
+            for (Element e : appendix) {
 
-        
-        
+                Elements res = e.select("tr > td:eq(0)");
+                int npp = res.size() == 0 ? 0 : Integer.parseInt(res.get(0).text());
+                
+                res = e.select("tr > td:eq(1)");
+                String fName = res.size() == 0 ? "no_name" : res.get(0).text();
+                File file = new File(fName);
+                
+                res = e.select("tr > td:eq(2)");
+                String sDate = res.size() == 0 ? "" : res.get(0).text();
+                Date d = new Date();
+                SimpleDateFormat sdf = new SimpleDateFormat("dd.mm.yyy HH:mm:00");
+                try {
+                    d = sdf.parse(sDate);
+                } catch (ParseException ex) {
+                    Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+                res = e.select("tr > td:eq(3)");
+                String sLength = res.size() == 0 ? "0" : res.get(0).text();
+                long l = 0L;
+                l = Long.parseLong(sLength);                
+                
+            }
+           
+        }   
                 
     }
 
