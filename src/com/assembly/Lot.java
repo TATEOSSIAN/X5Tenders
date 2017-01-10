@@ -1,5 +1,6 @@
 package com.assembly;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
@@ -98,11 +99,45 @@ public class Lot implements Serializable {
 }
 
 class Appendix {
+
+    public Appendix() {  }
     
-    private String description;
+    private File file;
     private Date birth;
     private int size;
     private byte[] binary;
+
+    public File getFile() {
+        return file;
+    }
+
+    public void setFile(File f) {
+        this.file = f;
+    }
+
+    public Date getBirth() {
+        return birth;
+    }
+
+    public void setBirth(Date birth) {
+        this.birth = birth;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public byte[] getBinary() {
+        return binary;
+    }
+
+    public void setBinary(byte[] binary) {
+        this.binary = binary;
+    }
     
 }
 
