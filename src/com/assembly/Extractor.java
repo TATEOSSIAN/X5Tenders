@@ -1,10 +1,14 @@
 package com.assembly;
 
 import com.support.Params;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
@@ -15,7 +19,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.jsoup.Connection.*;
+import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
 import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
@@ -58,9 +62,14 @@ public class Extractor {
         Matcher matcher = regex.matcher(rawNo);
         String match = "";
         
-        File fileR = new File("localR.dat");
+        File tmpFile = null;
         try {
-            FileInputStream fs = new FileInputStream(fileR);
+            tmpFile = File.createTempFile("_X5_", "tmp");
+        } catch (IOException ex) {
+            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            FileInputStream fs = new FileInputStream(tmpFile);
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -94,7 +103,9 @@ public class Extractor {
                     .header("Host", "tender.x5.ru")
                     .header("Upgrade-Insecure-Requests", "1")
                     .header("Referer", TENDERS_OVER_URL)
-                    //.data(id, VIEW_CMD, inputStream)
+//                    .data("lot_doc_name", "")
+//                    .data("download_req_id", "")
+//                    .data("doc_dem_type", doc_type)
                     .execute();
         } catch (IOException ex) {
             Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
@@ -142,22 +153,78 @@ public class Extractor {
                 res = e.select("tr > td:eq(2)");
                 String sDate = res.size() == 0 ? "" : res.get(0).text();
                 Date d = new Date();
-                SimpleDateFormat sdf = new SimpleDateFormat("dd.mm.yyy HH:mm:00");
+                SimpleDateFormat sdf0 = new SimpleDateFormat("dd.MM.yyyy HH:mm:00");
+                SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy HH:mm");
                 try {
-                    d = sdf.parse(sDate);
-                } catch (ParseException ex) {
-                    Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                    d = sdf0.parse(sDate);
+                } catch (ParseException pex0) {
+                    try {
+                        d = sdf.parse(sDate);
+                    } catch (ParseException pex) {
+                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, pex);
+                    }                   
                 }
                 
                 res = e.select("tr > td:eq(3)");
                 String sLength = res.size() == 0 ? "0" : res.get(0).text();
+                String[] sLengthArr = sLength.split("[\\D]+");
+                sLength = sLengthArr.length == 0 ? "0" : sLengthArr[0];
                 long l = 0L;
-                l = Long.parseLong(sLength);                
+                l = Long.parseLong(sLength);
                 
-            }
-           
-        }   
+                String doc_type = "";
+                res = e.select("td > input");
+                if (res.size() != 0) {
+                    String input = res.get(0).toString();
+                    String[] vars = input.split("(<.*\\(|',rq\\+.*)");
+                    if (vars.length != 0) {
+                        doc_type = vars[1]; 
+                    }
+                }
                 
+//                "<input class=\"button\" type=\"image\" name=\"Download_DocType\" value=\"Получить\" src=\"/images/mail_forwarded.gif\" title=\"Получить\" onclick=\"return docDownload('att5l6mntj_Приложение 1 Заявка-Спецификация.xls',rq+'Приложение 1 Заявка-Спецификация.xls')\">".split("(<.*\\(|',rq\\+.*)");
+                Response respBinary = null;
+                Connection.Request test = null;
+                if (!doc_type.isEmpty()) {
+                    //try {
+                        respBinary = Jsoup.connect(url.toString())
+                            .userAgent(USER_AGENT)
+                            .timeout(TIMEOUT)
+                            .cookies(MAP_LOGINPAGE_COOKIES)
+                            .method(Method.POST)
+                            .followRedirects(true)
+                            .header("Host", "tender.x5.ru")
+                            .header("Upgrade-Insecure-Requests", "1")
+                            .header("Referer", TENDERS_OVER_URL)
+                            .data("lot_doc_name", "")
+                            .data("download_req_id", "")
+                            .data("doc_dem_type", doc_type)
+                            //.data("view_auction", , inputStream), fName, inputStream)
+                            .response();
+                    //} catch (IOException ex) {
+                    //    Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                    //}                
+                }
+                if (respBinary!=null) {
+                    FileOutputStream fos = null;
+                    try {
+                        byte[] bytes = respBinary.bodyAsBytes();
+                        fos = new FileOutputStream(tmpFile);
+                        fos.write(bytes);
+                    } catch (FileNotFoundException ex) {
+                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                    } finally {
+                        try {
+                            fos.close();
+                        } catch (IOException ex) {
+                            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+            }          
+        }                  
     }
 
     public Extractor() throws IOException  {
