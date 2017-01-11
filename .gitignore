@@ -48,3 +48,4 @@ Temporary Items
 /build/
 /resources/DDL/database.properties
 /resources/DDL/sacredential.properties
+/dist/
