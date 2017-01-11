@@ -46,15 +46,11 @@ public class X5Tenders implements Runnable {
      */
     public static void main(String[] args) throws IllegalArgumentException {
         
-        //ExecutorService pool = Executors.newFixedThreadPool(2);        
-        
         Thread t = new Thread(new X5Tenders());
-        //pool.submit(t);
         t.start();
         
         Runnable runnable = () -> DBSession.getInstance();
         Thread r = new Thread(runnable);
-        //pool.submit(runnable);
         r.start();
         
         try {

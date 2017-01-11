@@ -13,7 +13,18 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.CookieStore;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.cookie.BasicClientCookie;
 import org.jsoup.Connection.Method;
 import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
@@ -26,7 +37,7 @@ public class Extractor {
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
-    private static final String INDEX_URL = "https://tender.x5.ru";
+    public static final String INDEX_URL = "https://tender.x5.ru";
     private static final String LOGIN_URL = INDEX_URL.concat("/user/login/login/");
     private static final String HALLS_URL = INDEX_URL.concat("/auction/guiding/halls");
     private static final String START_TENDERS_URL = INDEX_URL.concat("/auction/guiding/list_auction/2-start");
@@ -42,7 +53,7 @@ public class Extractor {
     private static final int TIMEOUT = 20 * 1000;
     private static final long SLEEP_T = 1500L;
 
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64)";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64)";
 
     private static final ParsedTenderTable TABLE = ParsedTenderTable.getInstance();
 
@@ -181,57 +192,115 @@ public class Extractor {
                 }
 
                 String boundary = createBoundary();
-
-                Response respBinary = null;
-                FileInputStream fis = null;
-                if (!doc_type.isEmpty()) {
-
-                    try {
-
-                        File attachDoc = new File(tmpDir.concat("\\").concat(doc_type));
-                        try {
-                            fis = new FileInputStream(attachDoc);
-                        } catch (FileNotFoundException ex) {
-                            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-
-                        respBinary = Jsoup.connect(url.toString())
-                                .userAgent(USER_AGENT)
-                                .timeout(TIMEOUT)
-                                .cookies(MAP_LOGINPAGE_COOKIES)
-                                .method(Method.POST)
-                                .followRedirects(true)
-                                //.header("Conten-Type", "multipart/form-data; boundary="
-                                //        + boundary)
-                                .header("Host", "tender.x5.ru")
-                                .header("Upgrade-Insecure-Requests", "1")
-                                .header("Referer", TENDERS_OVER_URL)
-                                .data("lot_doc_name", "")
-                                .data("download_req_id", "")
-                                //.data("doc_dem_type", ,)
-                                .execute();
-                    } catch (IOException ex) {
-                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                
+                MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
+                entityBuilder.addTextBody("lot_doc_name", "");
+                entityBuilder.addTextBody("download_req_id", "");
+                entityBuilder.addTextBody("doc_dem_type", doc_type);                
+                
+//                RequestConfig globalConfig = RequestConfig.custom()
+//                        .setCookieSpec(CookieSpecs.STANDARD)
+//                        .build();
+                
+                String key = "";
+                String val = "";                
+                for (Map.Entry<String, String> entry : MAP_LOGINPAGE_COOKIES.entrySet()) {
+                    key = entry.getKey();
+                    val = entry.getValue();
+                    break;
                 }
-                if (respBinary != null) {
-                    FileOutputStream fos = null;
-                    try {
-                        byte[] bytes = respBinary.bodyAsBytes();
-                        fos = new FileOutputStream(tmpFile);
-                        fos.write(bytes);
-                    } catch (FileNotFoundException ex) {
-                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IOException ex) {
-                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
-                    } finally {
-                        try {
-                            fos.close();
-                        } catch (IOException ex) {
-                            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
+                
+                CookieStore cookieStoreCred = new BasicCookieStore();                
+                Cookie cookie1 = new BasicClientCookie(key, val);
+                cookieStoreCred.addCookie(cookie1);
+                HttpClientContext context = HttpClientContext.create();                
+                context.setCookieStore(cookieStoreCred);
+                
+                RequestConfig config = RequestConfig.custom()
+                        .setConnectionRequestTimeout(TIMEOUT)
+                        .build();
+                
+//                HttpClient httpClient = HttpClientBuilder.create()
+//                        .setDefaultRequestConfig(config)
+//                        .setDefaultCookieStore(cookieStoreCred)
+//                        .setUserAgent(USER_AGENT)
+//                        .build();
+
+                CloseableHttpClient httpClient = HttpClients.custom()
+                        .setDefaultRequestConfig(config)
+                        .setDefaultCookieStore(cookieStoreCred)
+                        .setUserAgent(USER_AGENT)
+                        .build();
+                
+                HttpPost downloadFile = new HttpPost(url.toString());
+                HttpEntity multipart = entityBuilder.build();
+                downloadFile.setEntity(multipart);
+                
+                CloseableHttpResponse response = null;
+                try {
+                    response = httpClient.execute(downloadFile);
+                } catch (IOException ex) {
+                    Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                HttpEntity responseEntity = response.getEntity();
+                try {
+                    response.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+                }
+//<editor-fold defaultstate="collapsed" desc="JSoup handle">
+//                Response respBinary = null;
+//                FileInputStream fis = null;
+//                if (!doc_type.isEmpty()) {
+//
+//                    try {
+//
+//                        File attachDoc = new File(tmpDir.concat("\\").concat(doc_type));
+//                        try {
+//                            fis = new FileInputStream(attachDoc);
+//                        } catch (FileNotFoundException ex) {
+//                            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+//                        }
+//
+//                        respBinary = Jsoup.connect(url.toString())
+//                                .userAgent(USER_AGENT)
+//                                .timeout(TIMEOUT)
+//                                .cookies(MAP_LOGINPAGE_COOKIES)
+//                                .method(Method.POST)
+//                                .followRedirects(true)
+//                                //.header("Conten-Type", "multipart/form-data; boundary="
+//                                //        + boundary)
+//                                .header("Host", "tender.x5.ru")
+//                                .header("Upgrade-Insecure-Requests", "1")
+//                                .header("Referer", TENDERS_OVER_URL)
+//                                .data("lot_doc_name", "")
+//                                .data("download_req_id", "")
+//                                //.data("doc_dem_type", ,)
+//                                .execute();
+//                    } catch (IOException ex) {
+//                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+//                    }
+//                }
+//                if (respBinary != null) {
+//                    FileOutputStream fos = null;
+//                    try {
+//                        byte[] bytes = respBinary.bodyAsBytes();
+//                        fos = new FileOutputStream(tmpFile);
+//                        fos.write(bytes);
+//                    } catch (FileNotFoundException ex) {
+//                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+//                    } catch (IOException ex) {
+//                        Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+//                    } finally {
+//                        try {
+//                            fos.close();
+//                        } catch (IOException ex) {
+//                            Logger.getLogger(Extractor.class.getName()).log(Level.SEVERE, null, ex);
+//                        }
+//                    }
+//                }
+//</editor-fold>
+
             }
         }
     }
@@ -407,4 +476,5 @@ public class Extractor {
 
         TABLE.print();
     }
+
 }
