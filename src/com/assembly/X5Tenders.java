@@ -5,15 +5,14 @@
  */
 package com.assembly;
 
-import com.support.*;
+import com.support.DBSession;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.net.ConnectException;
 import java.sql.*;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -120,12 +119,12 @@ public class X5Tenders implements Runnable {
     @Override
     public void run() {
         
+        ApacheConnector connector = new ApacheConnector();
+        
         try {
-            Extractor extractor = new Extractor();
-        } catch (ConnectException ex) {
-            logThrownRecord(LABELS.getString("Conn_Error_construct_Extractor"), ex);
-        } catch (IOException exio) {
-            logThrownRecord(LABELS.getString("IO_Error_construct_Extractor"), exio);
+            connector.getOverAuctions();
+        } catch (IOException ex) {
+            Logger.getLogger(X5Tenders.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }

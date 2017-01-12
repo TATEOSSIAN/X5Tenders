@@ -1,7 +1,10 @@
 package com.assembly;
 
 import com.support.Params;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
@@ -38,15 +41,15 @@ public class Extractor {
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     public static final String INDEX_URL = "https://tender.x5.ru";
-    private static final String LOGIN_URL = INDEX_URL.concat("/user/login/login/");
+    public static final String LOGIN_URL = INDEX_URL.concat("/user/login/login/");
     private static final String HALLS_URL = INDEX_URL.concat("/auction/guiding/halls");
-    private static final String START_TENDERS_URL = INDEX_URL.concat("/auction/guiding/list_auction/2-start");
+    public static final String START_TENDERS_URL = INDEX_URL.concat("/auction/guiding/list_auction/2-start");
 
     /**
      * Статус завершенных тендеров
      */
     private static final String STATUS_ENDED = "2-over";
-    private static final String TENDERS_OVER_URL = INDEX_URL.concat("/auction/guiding/list_auction/")
+    public static final String TENDERS_OVER_URL = INDEX_URL.concat("/auction/guiding/list_auction/")
             .concat(STATUS_ENDED);
     private static final String VIEW_CMD = INDEX_URL.concat("/auction/guiding/view_auction");
 
@@ -332,62 +335,68 @@ public class Extractor {
         return result;
     }
 
-    public Extractor() throws IOException {
+    /**
+     *
+     * @param html
+     * @throws IOException
+     */
+    public void ExtractEndedAuctions(String html) throws IOException {
 
-        Response resp = Jsoup.connect(INDEX_URL)
-                .userAgent(USER_AGENT)
-                .followRedirects(true)
-                .timeout(TIMEOUT)
-                .execute();
-
-        try {
-            Thread.sleep(SLEEP_T);
-        } catch (InterruptedException ex) {
-            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
-        }
-
-        Response loginPageResponse = Jsoup.connect(LOGIN_URL)
-                .userAgent(USER_AGENT)
-                .timeout(TIMEOUT)
-                .cookies(resp.cookies())
-                .headers(resp.headers())
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                .header("Content-Type", "application/x-www-form-urlencoded;charset=windows-1251")
-                .data("Username", "kaskad-ltd")
-                .data("Password", "master2019")
-                .data("RedirectURL", "/auction/guiding/list_auction/1-start")
-                .method(Method.POST)
-                .followRedirects(true)
-                .execute();
-
-        try {
-            Thread.sleep(SLEEP_T);
-        } catch (InterruptedException ex) {
-            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
-        }
-
-        MAP_LOGINPAGE_COOKIES = loginPageResponse.cookies();
+//        Response resp = Jsoup.connect(INDEX_URL)
+//                .userAgent(USER_AGENT)
+//                .followRedirects(true)
+//                .timeout(TIMEOUT)
+//                .execute();
+//
+//        try {
+//            Thread.sleep(SLEEP_T);
+//        } catch (InterruptedException ex) {
+//            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
+//        }
+//
+//        Response loginPageResponse = Jsoup.connect(LOGIN_URL)
+//                .userAgent(USER_AGENT)
+//                .timeout(TIMEOUT)
+//                .cookies(resp.cookies())
+//                .headers(resp.headers())
+//                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+//                .header("Content-Type", "application/x-www-form-urlencoded;charset=windows-1251")
+//                .data("Username", "kaskad-ltd")
+//                .data("Password", "master2019")
+//                .data("RedirectURL", "/auction/guiding/list_auction/1-start")
+//                .method(Method.POST)
+//                .followRedirects(true)
+//                .execute();
+//
+//        try {
+//            Thread.sleep(SLEEP_T);
+//        } catch (InterruptedException ex) {
+//            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
+//        }
+//
+//        MAP_LOGINPAGE_COOKIES = loginPageResponse.cookies();
+//
+//
+//        resp = Jsoup.connect(TENDERS_OVER_URL)
+//                .userAgent(USER_AGENT)
+//                .timeout(TIMEOUT)
+//                //.cookies(resp.cookies())
+//                .cookies(MAP_LOGINPAGE_COOKIES)
+//                .method(Method.GET)
+//                .followRedirects(true)
+//                .header("Host", "tender.x5.ru")
+//                .header("Upgrade-Insecure-Requests", "1")
+//                .execute();
+//
+//        try {
+//            Thread.sleep(SLEEP_T);
+//        } catch (InterruptedException ex) {
+//            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
+//        }
 
         ArrayList<Document> documents = new ArrayList<>();
-
-        resp = Jsoup.connect(TENDERS_OVER_URL)
-                .userAgent(USER_AGENT)
-                .timeout(TIMEOUT)
-                //.cookies(resp.cookies())
-                .cookies(MAP_LOGINPAGE_COOKIES)
-                .method(Method.GET)
-                .followRedirects(true)
-                .header("Host", "tender.x5.ru")
-                .header("Upgrade-Insecure-Requests", "1")
-                .execute();
-
-        try {
-            Thread.sleep(SLEEP_T);
-        } catch (InterruptedException ex) {
-            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
-        }
-
-        Document doc = resp.parse();
+        
+        Document doc = Jsoup.parse(html);
         documents.add(doc);
 
         Elements links = doc.getElementsByClass("path");
@@ -404,7 +413,7 @@ public class Extractor {
 
         for (String url : deduped) {
 
-            resp = Jsoup.connect(INDEX_URL.concat(url))
+            Response resp = Jsoup.connect(INDEX_URL.concat(url))
                     .userAgent(USER_AGENT)
                     .timeout(TIMEOUT)
                     .cookies(MAP_LOGINPAGE_COOKIES)
