@@ -340,7 +340,7 @@ public class Extractor {
      * @param html
      * @throws IOException
      */
-    public void ExtractEndedAuctions(String html) throws IOException {
+    public static void extractEndedAuctions(String html) throws IOException {
 
 //        Response resp = Jsoup.connect(INDEX_URL)
 //                .userAgent(USER_AGENT)

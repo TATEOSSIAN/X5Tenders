@@ -43,7 +43,7 @@ public class ApacheConnector {
     
     private List<Cookie> mCookies;
     
-    public int login() {
+    private int login() {
         
         int responseCode = 404;
         
@@ -125,7 +125,10 @@ public class ApacheConnector {
             } catch (IOException ex) {
                 Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }      
+        }
+        
+        login();
+        
     }
     
     private static void createRequestConfig() {
@@ -192,6 +195,8 @@ public class ApacheConnector {
 	while ((line = rd.readLine()) != null) {
 		result.append(line);
 	}
+        
+        Extractor.extractEndedAuctions(result.toString());
                
     }
     

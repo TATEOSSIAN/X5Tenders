@@ -36,15 +36,13 @@ public class ApacheConnectorTest {
     }
 
     /**
-     * Test of login method, of class ApacheConnector.
+     * Test of getOverAuctions method, of class ApacheConnector.
      */
     @Test
-    public void testLogin() {
-        System.out.println("login");
+    public void testGetOverAuctions() throws Exception {
+        System.out.println("getOverAuctions");
         ApacheConnector instance = new ApacheConnector();
-        String expResult = "";
-        int result = instance.login();
-        assertEquals(expResult, result);
+        instance.getOverAuctions();
     }
     
 }
