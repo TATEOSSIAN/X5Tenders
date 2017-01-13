@@ -340,7 +340,7 @@ public class Extractor {
      * @param html
      * @throws IOException
      */
-    public static void extractEndedAuctions(String html) throws IOException {
+    public static void extractEndedAuctions(ApacheConnector connector) throws IOException {
 
 //        Response resp = Jsoup.connect(INDEX_URL)
 //                .userAgent(USER_AGENT)
@@ -348,11 +348,11 @@ public class Extractor {
 //                .timeout(TIMEOUT)
 //                .execute();
 //
-//        try {
-//            Thread.sleep(SLEEP_T);
-//        } catch (InterruptedException ex) {
-//            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
-//        }
+        try {
+            Thread.sleep(SLEEP_T);
+        } catch (InterruptedException ex) {
+            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
+        }
 //
 //        Response loginPageResponse = Jsoup.connect(LOGIN_URL)
 //                .userAgent(USER_AGENT)
@@ -388,11 +388,14 @@ public class Extractor {
 //                .header("Upgrade-Insecure-Requests", "1")
 //                .execute();
 //
-//        try {
-//            Thread.sleep(SLEEP_T);
-//        } catch (InterruptedException ex) {
-//            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
-//        }
+
+        String html = connector.getOverAuctions();
+        
+        try {
+            Thread.sleep(SLEEP_T);
+        } catch (InterruptedException ex) {
+            X5Tenders.logThrownRecord(Extractor.class.getName(), ex);
+        }
 
         ArrayList<Document> documents = new ArrayList<>();
         
@@ -413,14 +416,16 @@ public class Extractor {
 
         for (String url : deduped) {
 
-            Response resp = Jsoup.connect(INDEX_URL.concat(url))
-                    .userAgent(USER_AGENT)
-                    .timeout(TIMEOUT)
-                    .cookies(MAP_LOGINPAGE_COOKIES)
-                    .method(Method.GET)
-                    .execute();
+//            Response resp = Jsoup.connect(INDEX_URL.concat(url))
+//                    .userAgent(USER_AGENT)
+//                    .timeout(TIMEOUT)
+//                    .cookies(MAP_LOGINPAGE_COOKIES)
+//                    .method(Method.GET)
+//                    .execute();
 
-            doc = resp.parse();
+            String auctionHtml = connector.getAuctionBody(INDEX_URL.concat(url));
+
+            doc = Jsoup.parse(auctionHtml);
             documents.add(doc);
         }
 

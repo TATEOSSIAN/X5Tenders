@@ -122,7 +122,9 @@ public class X5Tenders implements Runnable {
         ApacheConnector connector = new ApacheConnector();
         
         try {
-            connector.getOverAuctions();
+            
+            Extractor.extractEndedAuctions(connector);
+            
         } catch (IOException ex) {
             Logger.getLogger(X5Tenders.class.getName()).log(Level.SEVERE, null, ex);
         }

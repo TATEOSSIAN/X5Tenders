@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
@@ -18,6 +20,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.config.ConnectionConfig;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -27,7 +30,7 @@ public class ApacheConnector {
 
     private static final long serialVersionUID = 0L;
    
-    private static CookieStore httpCookieStore = new BasicCookieStore();
+    private static final CookieStore HTTPCOOKIESTORE = new BasicCookieStore();
     
     private static final String USER_AGENT          = Extractor.USER_AGENT;
     private static final String INDEX_URL           = Extractor.INDEX_URL;
@@ -72,7 +75,7 @@ public class ApacheConnector {
             Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        mCookies = httpCookieStore.getCookies();
+        mCookies = HTTPCOOKIESTORE.getCookies();
         
         return responseCode;        
     }
@@ -112,7 +115,7 @@ public class ApacheConnector {
                 result.append(line);
             }
             
-	httpCookieStore.getCookies();
+	HTTPCOOKIESTORE.getCookies();
             
         indexPage = result.toString();
         } catch (IOException ex) {
@@ -135,19 +138,26 @@ public class ApacheConnector {
         
         requestConfig = RequestConfig.custom()
                 .setConnectionRequestTimeout(10000)
+                .setConnectTimeout(50000)
                 .setRelativeRedirectsAllowed(true)
                 .setCircularRedirectsAllowed(true)
+                .setContentCompressionEnabled(true)
                 .build();
+        
     }    
     
     private static HttpClient buildHttpClient() {
         
-        createRequestConfig();                
+        createRequestConfig();
         
         return HttpClientBuilder.create()
                 .setUserAgent(USER_AGENT)
                 .setDefaultRequestConfig(requestConfig)
-                .setDefaultCookieStore(httpCookieStore)
+                .setDefaultCookieStore(HTTPCOOKIESTORE)
+                .setDefaultConnectionConfig(ConnectionConfig.custom().
+                        setCharset(Consts.ASCII).build())
+                .setMaxConnTotal(100)
+                .setMaxConnPerRoute(25)
                 .build();
     } 
 
@@ -177,7 +187,7 @@ public class ApacheConnector {
         
     }
     
-    void getOverAuctions() throws IOException {
+    String getOverAuctions() throws IOException {
         
         HttpGet request = new HttpGet(TENDERS_OVER_URL);
         setGetHeaders(request);
@@ -186,20 +196,23 @@ public class ApacheConnector {
         
         response = CLIENT.execute(request);
         int responseCode = response.getStatusLine().getStatusCode();
-        
-	BufferedReader rd = new BufferedReader(
-                new InputStreamReader(response.getEntity().getContent()));
 
-	StringBuffer result = new StringBuffer();
-	String line = "";
-	while ((line = rd.readLine()) != null) {
-		result.append(line);
-	}
-        
-        Extractor.extractEndedAuctions(result.toString());
+        return IOUtils.toString(response.getEntity().getContent(), "windows-1251");
                
     }
     
-    
+    String getAuctionBody(String auctionUrl) throws IOException {
+        
+        String html = "";
+        
+        HttpGet request = new HttpGet(auctionUrl);
+        setGetHeaders(request);
+        
+        HttpResponse response = null;
+        
+        response = CLIENT.execute(request);
+        int responseCode = response.getStatusLine().getStatusCode();
 
+        return IOUtils.toString(response.getEntity().getContent(), "windows-1251");
+    }    
 }
