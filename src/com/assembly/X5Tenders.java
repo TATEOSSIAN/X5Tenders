@@ -20,10 +20,18 @@ import java.util.logging.Logger;
  */
 public class X5Tenders implements Runnable {
 
+    private static final Logger LOG = Logger.getLogger("X5Tender");
+    public static final ResourceBundle LABELS = ResourceBundle.getBundle("LStrings", new Locale("ru", "RU"));
+    
+    public static final String WORKFLOW = System.getenv("LOCALAPPDATA")
+            .concat("\\").concat("X5Tenders").concat("\\");
+    
+    private static ApacheConnector connector;
+    
     private static void collectLotData() {
         for (TenderRow row : ParsedTenderTable.getRows()) {
             
-            Lot lot = new Lot(row);
+            Lot lot = new Lot(row, connector);
             
         }
     }
@@ -34,11 +42,6 @@ public class X5Tenders implements Runnable {
         DBSession.getConnection().close();
     }
     
-    private static final Logger LOG = Logger.getLogger("X5Tender");
-    public static final ResourceBundle LABELS = ResourceBundle.getBundle("LStrings", new Locale("ru", "RU"));
-    
-    public static final String WORKFLOW = System.getenv("LOCALAPPDATA")
-            .concat("\\").concat("X5Tenders").concat("\\");
 
     /**
      * @param args Аргументы командной строки
@@ -119,7 +122,7 @@ public class X5Tenders implements Runnable {
     @Override
     public void run() {
         
-        ApacheConnector connector = new ApacheConnector();
+        connector = new ApacheConnector();
         
         try {
             

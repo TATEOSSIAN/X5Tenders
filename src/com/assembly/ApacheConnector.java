@@ -1,8 +1,13 @@
 package com.assembly;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
@@ -12,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Consts;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
@@ -22,9 +28,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.cookie.Cookie;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
+import org.jsoup.nodes.Document;
 
 public class ApacheConnector {
 
@@ -201,8 +209,18 @@ public class ApacheConnector {
                
     }
     
+    String getLotBody(String lotURL) throws IOException {
+        
+        return fetchHtml(lotURL);
+        
+    }
+    
     String getAuctionBody(String auctionUrl) throws IOException {
         
+        return fetchHtml(auctionUrl);
+    }    
+
+    private String fetchHtml(String auctionUrl) throws UnsupportedOperationException, IOException {
         String html = "";
         
         HttpGet request = new HttpGet(auctionUrl);
@@ -215,4 +233,50 @@ public class ApacheConnector {
 
         return IOUtils.toString(response.getEntity().getContent(), "windows-1251");
     }    
+
+    void downloadAppendix(Document lotDocument, String doc_type, String sURL, 
+            String tmpDir, String docName) {
+        
+        File file = new File(tmpDir, docName);
+        
+        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
+        entityBuilder.addTextBody("lot_doc_name", "");
+        entityBuilder.addTextBody("download_req_id", "");
+        entityBuilder.addTextBody("doc_dem_type", doc_type);
+        
+        HttpPost downloadFile = new HttpPost(sURL);
+        HttpEntity multipart = entityBuilder.build();
+        downloadFile.setEntity(multipart);
+        
+        HttpEntity responseEntity = null;
+        try {
+            HttpResponse response = CLIENT.execute(downloadFile);
+            responseEntity = response.getEntity();
+        } catch (IOException ex) {
+            Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        InputStream content = null;        
+        try {
+            content = responseEntity.getContent();
+        } catch (IOException | UnsupportedOperationException ex) {
+            Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        OutputStream out = null;
+        try {
+            out = new FileOutputStream(file);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         
+        try {
+            IOUtils.copy(content, out);
+            content.close();
+            out.close();
+        } catch (IOException ex) {
+            Logger.getLogger(ApacheConnector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+  
+    }
 }

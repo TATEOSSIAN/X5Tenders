@@ -19,7 +19,7 @@ public class Lot implements Serializable {
     private HashMap regulations;
     private ArrayList<Appendix>[] reports;
 
-    Lot(TenderRow row) {
+    Lot(TenderRow row, ApacheConnector conn) {
         owner = row;
         description = row.getDescription();
         number = row.getNumber();
@@ -27,7 +27,7 @@ public class Lot implements Serializable {
         startDate = row.getStartDate();
         finishDate = row.getFinishDate();
         
-        Extractor.getLotData(this);
+        Extractor.getLotData(number, conn);
         
     }
 
